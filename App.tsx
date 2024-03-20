@@ -1,9 +1,15 @@
-import React from 'react';
-import {Dimensions, PixelRatio, StyleSheet, View} from 'react-native';
+import React, {useMemo} from 'react';
+import {
+  Dimensions,
+  PixelRatio,
+  StyleSheet,
+  TouchableNativeFeedback,
+  View,
+} from 'react-native';
 import {Background} from './Background';
 import {Canvas} from '@shopify/react-native-skia';
 import {GRASS_SIDE, Terrain} from './Terrain';
-import {useGameState, game_update} from './GameState';
+import {useGameState, game_update, PressHandler} from './GameState';
 import {useFrameCallback} from 'react-native-reanimated';
 import {side, y_walk} from './Fox';
 import {FoxComponent} from './FoxComponent';
@@ -31,15 +37,18 @@ export function App() {
       return game_update(gs, info);
     });
   }, true);
+  const pressHandler = useMemo(() => new PressHandler(gs), [gs]);
 
   return (
-    <View style={styles.container}>
-      <Canvas style={StyleSheet.absoluteFill}>
-        <Background width={width} height={height} />
-        <FoxComponent game_state={gs} pd={pd} />
-        <Terrain width={width} pd={pd} game_state={gs} />
-      </Canvas>
-    </View>
+    <TouchableNativeFeedback onPress={pressHandler.onPress}>
+      <View style={styles.container}>
+        <Canvas style={StyleSheet.absoluteFill}>
+          <Background width={width} height={height} />
+          <FoxComponent game_state={gs} pd={pd} />
+          <Terrain width={width} pd={pd} game_state={gs} />
+        </Canvas>
+      </View>
+    </TouchableNativeFeedback>
   );
 }
 

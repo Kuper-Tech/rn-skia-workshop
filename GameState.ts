@@ -1,5 +1,5 @@
 import {FrameInfo, SharedValue, useSharedValue} from 'react-native-reanimated';
-import {FoxState, YState, init_fox_state, update_fox_state} from './Fox';
+import {FoxState, YState, init_fox_state, jump_after, jump_prepare, set_y_state, update_fox_state, y_die, y_jump, y_sleep} from './Fox';
 
 export type TerrainBlock = {
   x: number;
@@ -75,7 +75,37 @@ export function useGameState(game_decl: GameDecl): SharedValue<GameState> {
 
 export function game_update(gs: GameState, info: FrameInfo): GameState {
   'worklet';
+  let v =
+    gs.fox_state.ystate === y_jump
+      ? gs.game_decl.velocity * 1.25
+      : gs.game_decl.velocity;
+
+  if (gs.fox_state.ystate === y_sleep || gs.fox_state.ystate === y_die) {
+    v = 0;
+  }
+
+  update_fox_state(gs.fox_state, gs.prev_timestamp, v, info);
   update_terrains(gs, gs.game_decl.velocity, info);
-  update_fox_state(gs.fox_state, info);
   return gs;
+}
+
+function handlePress(gs: GameState): GameState {
+  'worklet';
+  if (!gs.fox_state.jump_state || gs.fox_state.jump_state === jump_after) {
+    gs.fox_state.jump_state = jump_prepare;
+    set_y_state(gs.fox_state, y_jump);
+  }
+  return gs;
+}
+
+export class PressHandler {
+  gs: SharedValue<GameState>;
+  constructor(gs: SharedValue<GameState>) {
+    this.gs = gs;
+  }
+
+  onPress = () => {
+    // @ts-ignore
+    this.gs.modify(handlePress);
+  };
 }

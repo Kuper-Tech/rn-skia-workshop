@@ -17,6 +17,27 @@ export type YState = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 // max x frames for y offset
 export const x_frames = [4, 13, 7, 10, 4, 5, 6] as const;
 
+export type JumpNone = 0;
+export const jump_none: JumpNone = 0;
+export type JumpRising = 1;
+export const jump_rising: JumpRising = 1;
+export type JumpFalling = 2;
+export const jump_falling: JumpFalling = 2;
+export type JumpPrepare = 3;
+export const jump_prepare: JumpPrepare = 3;
+export type JumpAfter = 4;
+export const jump_after: JumpAfter = 4;
+export type JumpFail = 5;
+export const jump_fail: JumpFail = 5;
+
+export type JumpState =
+  | JumpNone
+  | JumpRising
+  | JumpFalling
+  | JumpPrepare
+  | JumpAfter
+  | JumpFail;
+
 export type FoxState = {
   ystate: YState;
   xstate: number;
@@ -26,6 +47,7 @@ export type FoxState = {
   x: number;
   y: number;
   initial_y: number;
+  jump_state: JumpState;
 };
 
 export function get_next_x(state: FoxState): number {
@@ -61,10 +83,73 @@ export function update_x_offset(
   state.time_from_prev_frame = time_since_first_frame;
 }
 
-export function update_fox_state(state: FoxState, info: FrameInfo) {
+export function update_fox_state(
+  state: FoxState,
+  prev_ts: number,
+  v: number,
+  info: FrameInfo,
+) {
   'worklet';
 
-  update_x_offset(state, info.timeSinceFirstFrame);
+  const jump_height = side * 1.5;
+  const delta = info.timeSinceFirstFrame - prev_ts;
+  if (state.jump_state > 0) {
+    if (state.jump_state === jump_fail) {
+      if (state.ystate !== y_hit) {
+        set_y_state(state, y_hit);
+      }
+      state.y += delta * v * 1.5;
+      state.y = Math.min(state.y, state.initial_y);
+      if (state.y === state.initial_y) {
+        state.jump_state = jump_none;
+      }
+    } else if (state.jump_state === jump_prepare) {
+      update_x_offset(state, info.timeSinceFirstFrame);
+      if (state.xstate > 2) {
+        state.jump_state = jump_rising;
+      }
+    } else if (state.jump_state === jump_after) {
+      update_x_offset(state, info.timeSinceFirstFrame);
+      if (state.xstate === x_frames[state.ystate] || state.xstate === 0) {
+        state.jump_state = jump_none;
+        set_y_state(state, y_walk);
+      }
+    } else if (state.jump_state === jump_rising) {
+      state.y -= delta * v * 1.5;
+      state.y = Math.max(state.y, state.initial_y - jump_height);
+      if (state.y === state.initial_y - jump_height) {
+        if (info.timeSinceFirstFrame - state.time_from_prev_frame > 300) {
+          state.jump_state = jump_falling;
+        }
+      } else if (state.y < state.initial_y - jump_height / 3) {
+        state.xstate = 2;
+        update_x_offset(state, info.timeSinceFirstFrame);
+      } else {
+        state.xstate = 3;
+        update_x_offset(state, info.timeSinceFirstFrame);
+      }
+    } else if (state.jump_state === jump_falling) {
+      state.y = state.y + delta * v * 1.5;
+      state.y = Math.min(state.y, state.initial_y);
+      if (state.y >= state.initial_y && state.xstate === 5) {
+        state.jump_state = jump_after;
+      } else if (state.y >= state.initial_y - jump_height) {
+        state.xstate = 4;
+        update_x_offset(state, info.timeSinceFirstFrame);
+      }
+    }
+  } else if (state.ystate === y_hit) {
+    update_x_offset(state, info.timeSinceFirstFrame);
+    if (state.xstate === x_frames[y_hit]) {
+      set_y_state(state, y_walk);
+    }
+  } else if (state.ystate === y_die) {
+    if (state.xstate < x_frames[y_die]) {
+      update_x_offset(state, info.timeSinceFirstFrame);
+    }
+  } else {
+    update_x_offset(state, info.timeSinceFirstFrame);
+  }
 }
 
 export function init_fox_state(
@@ -82,5 +167,6 @@ export function init_fox_state(
     x,
     y,
     initial_y: y,
+    jump_state: jump_none,
   };
 }
