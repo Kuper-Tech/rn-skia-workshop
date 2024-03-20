@@ -11,7 +11,7 @@ import {Canvas} from '@shopify/react-native-skia';
 import {GRASS_SIDE, Terrain} from './Terrain';
 import {useGameState, game_update, PressHandler} from './GameState';
 import {useFrameCallback} from 'react-native-reanimated';
-import {side, y_walk} from './Fox';
+import {side, y_sleep} from './Fox';
 import {FoxComponent} from './FoxComponent';
 import {
   ENEMY_FRAMES,
@@ -19,7 +19,9 @@ import {
   ENEMY_WIDTH,
   EnemyComponent,
 } from './EnemyComponent';
-import { LivesCount } from './LivesCount';
+import {LivesCount} from './LivesCount';
+import {GameOverLabel} from './GameOverLabel';
+import {StartTapLabel} from './StartTapLabel';
 
 const {width, height} = Dimensions.get('window');
 const pd = PixelRatio.get();
@@ -34,7 +36,7 @@ export function App() {
     pd,
     fox_x: side,
     fox_y: height / pd - terrain_size - side,
-    fox_state: y_walk,
+    fox_state: y_sleep,
     enemy_height: ENEMY_HEIGHT,
     enemy_width: ENEMY_WIDTH,
     enemy_frames: ENEMY_FRAMES,
@@ -60,6 +62,8 @@ export function App() {
           <Terrain width={width} pd={pd} game_state={gs} />
           <LivesCount game_state={gs} pd={pd} />
         </Canvas>
+        <GameOverLabel gs={gs} />
+        <StartTapLabel gs={gs} />
       </View>
     </TouchableNativeFeedback>
   );

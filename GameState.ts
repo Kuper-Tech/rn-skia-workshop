@@ -12,6 +12,7 @@ import {
   y_hit,
   y_jump,
   y_sleep,
+  y_walk,
 } from './Fox';
 
 export type TerrainBlock = {
@@ -222,14 +223,31 @@ export function game_update(gs: GameState, info: FrameInfo): GameState {
 
   update_enemy(gs, info, v);
   update_fox_state(gs.fox_state, gs.prev_timestamp, v, info);
-  update_terrains(gs, gs.game_decl.velocity, info);
+  update_terrains(gs, v, info);
   handle_collisions(gs);
   return gs;
 }
 
+export function reset_state(game_state: GameState) {
+  'worklet';
+  const next = init_game_state(game_state.game_decl);
+  game_state.fox_state = next.fox_state;
+  game_state.terrains = next.terrains;
+  game_state.prev_timestamp = next.prev_timestamp;
+  game_state.enemy = next.enemy;
+  game_state.lives = next.lives;
+}
+
 function handlePress(gs: GameState): GameState {
   'worklet';
-  if (!gs.fox_state.jump_state || gs.fox_state.jump_state === jump_after) {
+  if (gs.fox_state.ystate === y_die) {
+    reset_state(gs);
+  } else if (gs.fox_state.ystate === y_sleep) {
+    set_y_state(gs.fox_state, y_walk);
+  } else if (
+    !gs.fox_state.jump_state ||
+    gs.fox_state.jump_state === jump_after
+  ) {
     gs.fox_state.jump_state = jump_prepare;
     set_y_state(gs.fox_state, y_jump);
   }
