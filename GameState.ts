@@ -1,5 +1,17 @@
 import {FrameInfo, SharedValue, useSharedValue} from 'react-native-reanimated';
-import {FoxState, YState, init_fox_state, jump_after, jump_prepare, set_y_state, update_fox_state, y_die, y_jump, y_sleep} from './Fox';
+import {
+  FoxState,
+  YState,
+  init_fox_state,
+  jump_after,
+  jump_prepare,
+  set_y_state,
+  side,
+  update_fox_state,
+  y_die,
+  y_jump,
+  y_sleep,
+} from './Fox';
 
 export type TerrainBlock = {
   x: number;
@@ -15,13 +27,68 @@ export type GameDecl = {
   fox_state: YState;
   fox_y: number;
   fox_x: number;
+  enemy_width: number;
+  enemy_height: number;
+  enemy_frames: number;
 };
+
+export type EnemyState = {
+  x: number;
+  y: number;
+  frame: number;
+  width: number;
+  height: number;
+  x_offset: number;
+  time_from_prev_update: number;
+  is_hitted: boolean;
+};
+
+export function init_enemy_state(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): EnemyState {
+  'worklet';
+  return {
+    x,
+    y,
+    frame: 0,
+    width,
+    height,
+    x_offset: 0,
+    time_from_prev_update: 0,
+    is_hitted: false,
+  };
+}
+
+export function update_enemy(gs: GameState, info: FrameInfo, v: number) {
+  'worklet';
+
+  const delta = info.timeSinceFirstFrame - gs.enemy.time_from_prev_update;
+  gs.enemy.x -= (info.timeSinceFirstFrame - gs.prev_timestamp) * v;
+  if (delta < 1000 / gs.game_decl.enemy_frames) {
+    return;
+  }
+  gs.enemy.frame += 1;
+  gs.enemy.x_offset = gs.enemy.frame * gs.game_decl.enemy_width;
+  if (gs.enemy.frame > gs.game_decl.enemy_frames) {
+    gs.enemy.x_offset = 0;
+    gs.enemy.frame = 0;
+  }
+  gs.enemy.time_from_prev_update = info.timeSinceFirstFrame;
+
+  if (gs.enemy.x + gs.enemy.width < -gs.game_decl.width / 2) {
+    gs.enemy.x = gs.game_decl.width + gs.enemy.width;
+  }
+}
 
 export type GameState = {
   game_decl: GameDecl;
   terrains: [TerrainBlock, TerrainBlock, TerrainBlock];
   prev_timestamp: number;
   fox_state: FoxState;
+  enemy: EnemyState;
 };
 
 export function init_terrains(
@@ -66,6 +133,12 @@ export function init_game_state(game_decl: GameDecl): GameState {
       game_decl.fox_y,
       game_decl.fox_state,
     ),
+    enemy: init_enemy_state(
+      game_decl.width * 2,
+      game_decl.fox_y + (side - game_decl.enemy_height),
+      game_decl.enemy_width,
+      game_decl.enemy_height,
+    ),
   };
 }
 
@@ -84,6 +157,7 @@ export function game_update(gs: GameState, info: FrameInfo): GameState {
     v = 0;
   }
 
+  update_enemy(gs, info, v);
   update_fox_state(gs.fox_state, gs.prev_timestamp, v, info);
   update_terrains(gs, gs.game_decl.velocity, info);
   return gs;

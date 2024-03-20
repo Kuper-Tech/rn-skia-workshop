@@ -13,6 +13,12 @@ import {useGameState, game_update, PressHandler} from './GameState';
 import {useFrameCallback} from 'react-native-reanimated';
 import {side, y_walk} from './Fox';
 import {FoxComponent} from './FoxComponent';
+import {
+  ENEMY_FRAMES,
+  ENEMY_HEIGHT,
+  ENEMY_WIDTH,
+  EnemyComponent,
+} from './EnemyComponent';
 
 const {width, height} = Dimensions.get('window');
 const pd = PixelRatio.get();
@@ -28,6 +34,9 @@ export function App() {
     fox_x: side,
     fox_y: height / pd - terrain_size - side,
     fox_state: y_walk,
+    enemy_height: ENEMY_HEIGHT,
+    enemy_width: ENEMY_WIDTH,
+    enemy_frames: ENEMY_FRAMES,
   });
 
   useFrameCallback(info => {
@@ -45,6 +54,7 @@ export function App() {
         <Canvas style={StyleSheet.absoluteFill}>
           <Background width={width} height={height} />
           <FoxComponent game_state={gs} pd={pd} />
+          <EnemyComponent game_state={gs} pd={pd} />
           <Terrain width={width} pd={pd} game_state={gs} />
         </Canvas>
       </View>
