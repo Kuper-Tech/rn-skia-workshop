@@ -19,6 +19,7 @@ import {
   ENEMY_WIDTH,
   EnemyComponent,
 } from './EnemyComponent';
+import { LivesCount } from './LivesCount';
 
 const {width, height} = Dimensions.get('window');
 const pd = PixelRatio.get();
@@ -37,6 +38,7 @@ export function App() {
     enemy_height: ENEMY_HEIGHT,
     enemy_width: ENEMY_WIDTH,
     enemy_frames: ENEMY_FRAMES,
+    initial_lives: 3,
   });
 
   useFrameCallback(info => {
@@ -53,9 +55,10 @@ export function App() {
       <View style={styles.container}>
         <Canvas style={StyleSheet.absoluteFill}>
           <Background width={width} height={height} />
-          <FoxComponent game_state={gs} pd={pd} />
           <EnemyComponent game_state={gs} pd={pd} />
+          <FoxComponent game_state={gs} pd={pd} />
           <Terrain width={width} pd={pd} game_state={gs} />
+          <LivesCount game_state={gs} pd={pd} />
         </Canvas>
       </View>
     </TouchableNativeFeedback>

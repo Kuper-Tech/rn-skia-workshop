@@ -9,6 +9,7 @@ import {
   side,
   update_fox_state,
   y_die,
+  y_hit,
   y_jump,
   y_sleep,
 } from './Fox';
@@ -30,6 +31,7 @@ export type GameDecl = {
   enemy_width: number;
   enemy_height: number;
   enemy_frames: number;
+  initial_lives: number;
 };
 
 export type EnemyState = {
@@ -89,6 +91,7 @@ export type GameState = {
   prev_timestamp: number;
   fox_state: FoxState;
   enemy: EnemyState;
+  lives: number;
 };
 
 export function init_terrains(
@@ -122,6 +125,60 @@ export function update_terrains(state: GameState, v: number, info: FrameInfo) {
   }
 }
 
+export function is_overlaping1D(
+  xmin1: number,
+  xmax1: number,
+  xmin2: number,
+  xmax2: number,
+): boolean {
+  'worklet';
+  return xmax1 >= xmin2 && xmax2 >= xmin1;
+}
+
+export function is_overlaping2D(
+  ex1: number,
+  ey1: number,
+  ex2: number,
+  ey2: number,
+  fx1: number,
+  fy1: number,
+  fx2: number,
+  fy2: number,
+): boolean {
+  'worklet';
+  return (
+    is_overlaping1D(ex1, ex2, fx1, fx2) && is_overlaping1D(ey1, ey2, fy1, fy2)
+  );
+}
+
+export function handle_collisions(gs: GameState) {
+  'worklet';
+  const ex0 = gs.enemy.x + gs.enemy.width / 4;
+  const ey0 = gs.enemy.y;
+  const fx0 = gs.fox_state.x + 4;
+  const fy0 = gs.fox_state.y;
+  const ex1 = gs.enemy.x + gs.enemy.width / 2;
+  const ey1 = gs.enemy.y + gs.enemy.height / 2;
+  const fx1 = gs.fox_state.x + side - 8;
+  const fy1 = gs.fox_state.y + side;
+  if (
+    !gs.enemy.is_hitted &&
+    is_overlaping2D(ex0, ey0, ex1, ey1, fx0, fy0, fx1, fy1)
+  ) {
+    gs.enemy.is_hitted = true;
+    if (gs.fox_state.jump_state > 0) {
+      gs.fox_state.jump_state = 5;
+    } else {
+      set_y_state(gs.fox_state, y_hit);
+    }
+    gs.lives -= 1;
+    if (gs.lives === 0) {
+      gs.fox_state.jump_state = 0;
+      set_y_state(gs.fox_state, y_die);
+    }
+  }
+}
+
 export function init_game_state(game_decl: GameDecl): GameState {
   'worklet';
   return {
@@ -139,6 +196,7 @@ export function init_game_state(game_decl: GameDecl): GameState {
       game_decl.enemy_width,
       game_decl.enemy_height,
     ),
+    lives: game_decl.initial_lives,
   };
 }
 
@@ -160,6 +218,7 @@ export function game_update(gs: GameState, info: FrameInfo): GameState {
   update_enemy(gs, info, v);
   update_fox_state(gs.fox_state, gs.prev_timestamp, v, info);
   update_terrains(gs, gs.game_decl.velocity, info);
+  handle_collisions(gs);
   return gs;
 }
 
