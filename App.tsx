@@ -22,7 +22,12 @@ import {
 import {LivesCount} from './LivesCount';
 import {GameOverLabel} from './GameOverLabel';
 import {StartTapLabel} from './StartTapLabel';
-import { START_FRAMES, START_SIDE, StartFlagComponent } from './StartFlagComponent';
+import {
+  START_FRAMES,
+  START_SIDE,
+  StartFlagComponent,
+} from './StartFlagComponent';
+import {CountLabel} from './CountLabel';
 
 const {width, height} = Dimensions.get('window');
 const pd = PixelRatio.get();
@@ -68,6 +73,7 @@ export function App() {
         </Canvas>
         <GameOverLabel gs={gs} />
         <StartTapLabel gs={gs} />
+        <CountLabel gs={gs} />
       </View>
     </TouchableNativeFeedback>
   );
