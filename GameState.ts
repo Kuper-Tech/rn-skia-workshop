@@ -81,7 +81,12 @@ export function update_enemy(gs: GameState, info: FrameInfo, v: number) {
   gs.enemy.time_from_prev_update = info.timeSinceFirstFrame;
 
   if (gs.enemy.x + gs.enemy.width < -gs.game_decl.width / 2) {
-    gs.enemy.x = gs.game_decl.width + gs.enemy.width;
+    if (gs.enemy.is_hitted) {
+      gs.enemy.x = gs.game_decl.width + gs.enemy.width;
+    } else {
+      gs.enemy.x = gs.game_decl.width + gs.enemy.width / 2;
+    }
+    gs.enemy.is_hitted = false;
   }
 }
 
