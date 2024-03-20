@@ -109,6 +109,7 @@ export type GameState = {
   enemy: EnemyState;
   lives: number;
   start: StartState;
+  count: number;
 };
 
 export function init_start_state(x: number, y: number): StartState {
@@ -226,6 +227,7 @@ export function init_game_state(game_decl: GameDecl): GameState {
     ),
     lives: game_decl.initial_lives,
     start: init_start_state(1.5 * side, game_decl.fox_y - side),
+    count: 0,
   };
 }
 
@@ -278,6 +280,7 @@ export function reset_state(game_state: GameState) {
   game_state.enemy = next.enemy;
   game_state.lives = next.lives;
   game_state.start = next.start;
+  game_state.count = 0;
 }
 
 function handlePress(gs: GameState): GameState {
