@@ -5,6 +5,8 @@ import {Canvas} from '@shopify/react-native-skia';
 import {GRASS_SIDE, Terrain} from './Terrain';
 import {useGameState, game_update} from './GameState';
 import {useFrameCallback} from 'react-native-reanimated';
+import {side, y_walk} from './Fox';
+import {FoxComponent} from './FoxComponent';
 
 const {width, height} = Dimensions.get('window');
 const pd = PixelRatio.get();
@@ -17,6 +19,9 @@ export function App() {
     terrain_size,
     velocity: 0.2 / pd,
     pd,
+    fox_x: side,
+    fox_y: height / pd - terrain_size - side,
+    fox_state: y_walk,
   });
 
   useFrameCallback(info => {
@@ -31,6 +36,7 @@ export function App() {
     <View style={styles.container}>
       <Canvas style={StyleSheet.absoluteFill}>
         <Background width={width} height={height} />
+        <FoxComponent game_state={gs} pd={pd} />
         <Terrain width={width} pd={pd} game_state={gs} />
       </Canvas>
     </View>

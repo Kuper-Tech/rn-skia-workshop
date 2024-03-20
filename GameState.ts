@@ -1,4 +1,5 @@
 import {FrameInfo, SharedValue, useSharedValue} from 'react-native-reanimated';
+import {FoxState, YState, init_fox_state, update_fox_state} from './Fox';
 
 export type TerrainBlock = {
   x: number;
@@ -11,12 +12,16 @@ export type GameDecl = {
   terrain_size: number;
   velocity: number;
   pd: number;
+  fox_state: YState;
+  fox_y: number;
+  fox_x: number;
 };
 
 export type GameState = {
   game_decl: GameDecl;
   terrains: [TerrainBlock, TerrainBlock, TerrainBlock];
   prev_timestamp: number;
+  fox_state: FoxState;
 };
 
 export function init_terrains(
@@ -56,6 +61,11 @@ export function init_game_state(game_decl: GameDecl): GameState {
     game_decl,
     terrains: init_terrains(game_decl),
     prev_timestamp: 0,
+    fox_state: init_fox_state(
+      game_decl.fox_x,
+      game_decl.fox_y,
+      game_decl.fox_state,
+    ),
   };
 }
 
@@ -66,5 +76,6 @@ export function useGameState(game_decl: GameDecl): SharedValue<GameState> {
 export function game_update(gs: GameState, info: FrameInfo): GameState {
   'worklet';
   update_terrains(gs, gs.game_decl.velocity, info);
+  update_fox_state(gs.fox_state, info);
   return gs;
 }
