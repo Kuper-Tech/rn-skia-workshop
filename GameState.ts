@@ -33,6 +33,8 @@ export type GameDecl = {
   enemy_height: number;
   enemy_frames: number;
   initial_lives: number;
+  start_side: number;
+  start_frames: number;
 };
 
 export type EnemyState = {
@@ -91,6 +93,14 @@ export function update_enemy(gs: GameState, info: FrameInfo, v: number) {
   }
 }
 
+export type StartState = {
+  x: number;
+  y: number;
+  frame: number;
+  time_from_prev_update: number;
+  x_offset: number;
+};
+
 export type GameState = {
   game_decl: GameDecl;
   terrains: [TerrainBlock, TerrainBlock, TerrainBlock];
@@ -98,7 +108,19 @@ export type GameState = {
   fox_state: FoxState;
   enemy: EnemyState;
   lives: number;
+  start: StartState;
 };
+
+export function init_start_state(x: number, y: number): StartState {
+  'worklet';
+  return {
+    x,
+    y,
+    frame: 0,
+    time_from_prev_update: 0,
+    x_offset: 0,
+  };
+}
 
 export function init_terrains(
   game_decl: GameDecl,
@@ -203,11 +225,29 @@ export function init_game_state(game_decl: GameDecl): GameState {
       game_decl.enemy_height,
     ),
     lives: game_decl.initial_lives,
+    start: init_start_state(1.5 * side, game_decl.fox_y - side),
   };
 }
 
 export function useGameState(game_decl: GameDecl): SharedValue<GameState> {
   return useSharedValue(init_game_state(game_decl));
+}
+
+export function update_flag(gs: GameState, info: FrameInfo, v: number) {
+  'worklet';
+
+  const delta = info.timeSinceFirstFrame - gs.start.time_from_prev_update;
+  gs.start.x -= (info.timeSinceFirstFrame - gs.prev_timestamp) * v;
+  if (delta < 750 / gs.game_decl.start_frames) {
+    return;
+  }
+  gs.start.frame += 1;
+  gs.start.x_offset = gs.start.frame * gs.game_decl.start_side;
+  if (gs.start.frame > gs.game_decl.start_frames) {
+    gs.start.x_offset = 0;
+    gs.start.frame = 0;
+  }
+  gs.start.time_from_prev_update = info.timeSinceFirstFrame;
 }
 
 export function game_update(gs: GameState, info: FrameInfo): GameState {
@@ -221,6 +261,7 @@ export function game_update(gs: GameState, info: FrameInfo): GameState {
     v = 0;
   }
 
+  update_flag(gs, info, v);
   update_enemy(gs, info, v);
   update_fox_state(gs.fox_state, gs.prev_timestamp, v, info);
   update_terrains(gs, v, info);
@@ -236,6 +277,7 @@ export function reset_state(game_state: GameState) {
   game_state.prev_timestamp = next.prev_timestamp;
   game_state.enemy = next.enemy;
   game_state.lives = next.lives;
+  game_state.start = next.start;
 }
 
 function handlePress(gs: GameState): GameState {

@@ -22,6 +22,7 @@ import {
 import {LivesCount} from './LivesCount';
 import {GameOverLabel} from './GameOverLabel';
 import {StartTapLabel} from './StartTapLabel';
+import { START_FRAMES, START_SIDE, StartFlagComponent } from './StartFlagComponent';
 
 const {width, height} = Dimensions.get('window');
 const pd = PixelRatio.get();
@@ -41,6 +42,8 @@ export function App() {
     enemy_width: ENEMY_WIDTH,
     enemy_frames: ENEMY_FRAMES,
     initial_lives: 3,
+    start_frames: START_FRAMES,
+    start_side: START_SIDE,
   });
 
   useFrameCallback(info => {
@@ -57,10 +60,11 @@ export function App() {
       <View style={styles.container}>
         <Canvas style={StyleSheet.absoluteFill}>
           <Background width={width} height={height} />
-          <EnemyComponent game_state={gs} pd={pd} />
-          <FoxComponent game_state={gs} pd={pd} />
-          <Terrain width={width} pd={pd} game_state={gs} />
           <LivesCount game_state={gs} pd={pd} />
+          <EnemyComponent game_state={gs} pd={pd} />
+          <Terrain width={width} pd={pd} game_state={gs} />
+          <StartFlagComponent game_state={gs} pd={pd} />
+          <FoxComponent game_state={gs} pd={pd} />
         </Canvas>
         <GameOverLabel gs={gs} />
         <StartTapLabel gs={gs} />
